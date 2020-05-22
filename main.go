@@ -11,7 +11,7 @@ import (
 
 	"gopkg.in/yaml.v3"
 
-	"github.com/mattn/efm-langserver/langserver"
+	"github.com/AstronomiaDev/efm-langserver/langserver"
 	"github.com/sourcegraph/jsonrpc2"
 )
 

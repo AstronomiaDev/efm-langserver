@@ -1,4 +1,4 @@
-module github.com/mattn/efm-langserver
+module github.com/AstronomiaDev/efm-langserver
 
 go 1.13
 
