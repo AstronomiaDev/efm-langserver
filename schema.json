@@ -51,6 +51,10 @@
           "description": "lint command",
           "type": "string"
         },
+        "lint-default-severity": {
+          "description": "linter default severity",
+          "type": "string"
+        },
         "lint-formats": {
           "description": "list of lint format",
           "items": {

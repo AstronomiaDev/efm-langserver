@@ -43,22 +43,23 @@ type Config1 struct {
 
 // Language is
 type Language struct {
-	LintFormats        []string `yaml:"lint-formats"`
-	LintStdin          bool     `yaml:"lint-stdin"`
-	LintOffset         int      `yaml:"lint-offset"`
-	LintCommand        string   `yaml:"lint-command"`
-	LintIgnoreExitCode bool     `yaml:"lint-ignore-exit-code"`
-	FormatCommand      string   `yaml:"format-command"`
-	FormatStdin        bool     `yaml:"format-stdin"`
-	SymbolCommand      string   `yaml:"symbol-command"`
-	SymbolStdin        bool     `yaml:"symbol-stdin"`
-	SymbolFormats      []string `yaml:"symbol-formats"`
-	CompletionCommand  string   `yaml:"completion-command"`
-	CompletionStdin    bool     `yaml:"completion-stdin"`
-	HoverCommand       string   `yaml:"hover-command"`
-	HoverStdin         bool     `yaml:"hover-stdin"`
-	HoverType          string   `yaml:"hover-type"`
-	Env                []string `yaml:"env"`
+	LintFormats         []string `yaml:"lint-formats"`
+	LintStdin           bool     `yaml:"lint-stdin"`
+	LintOffset          int      `yaml:"lint-offset"`
+	LintCommand         string   `yaml:"lint-command"`
+	LintDefaultSeverity string   `yaml:"lint-default-severity"`
+	LintIgnoreExitCode  bool     `yaml:"lint-ignore-exit-code"`
+	FormatCommand       string   `yaml:"format-command"`
+	FormatStdin         bool     `yaml:"format-stdin"`
+	SymbolCommand       string   `yaml:"symbol-command"`
+	SymbolStdin         bool     `yaml:"symbol-stdin"`
+	SymbolFormats       []string `yaml:"symbol-formats"`
+	CompletionCommand   string   `yaml:"completion-command"`
+	CompletionStdin     bool     `yaml:"completion-stdin"`
+	HoverCommand        string   `yaml:"hover-command"`
+	HoverStdin          bool     `yaml:"hover-stdin"`
+	HoverType           string   `yaml:"hover-type"`
+	Env                 []string `yaml:"env"`
 }
 
 // NewHandler create JSON-RPC handler for this language server.
@@ -67,15 +68,15 @@ func NewHandler(config *Config) jsonrpc2.Handler {
 		config.Logger = log.New(os.Stderr, "", log.LstdFlags)
 	}
 	var handler = &langHandler{
-		loglevel: config.LogLevel,
-		logger:   config.Logger,
-		commands: config.Commands,
-		configs:  config.Languages,
+		loglevel:          config.LogLevel,
+		logger:            config.Logger,
+		commands:          config.Commands,
+		configs:           config.Languages,
 		provideDefinition: config.ProvideDefinition,
-		files:    make(map[DocumentURI]*File),
-		request:  make(chan DocumentURI),
-		conn:     nil,
-		filename: config.Filename,
+		files:             make(map[DocumentURI]*File),
+		request:           make(chan DocumentURI),
+		conn:              nil,
+		filename:          config.Filename,
 	}
 	go handler.linter()
 	return jsonrpc2.HandlerWithError(handler.handle)
@@ -224,6 +225,19 @@ func (h *langHandler) lint(uri DocumentURI) ([]Diagnostic, error) {
 			continue
 		}
 
+		defaultSeverity := 1
+
+		switch {
+		case config.LintDefaultSeverity == "E" || config.LintDefaultSeverity == "e":
+			defaultSeverity = 1
+		case config.LintDefaultSeverity == "W" || config.LintDefaultSeverity == "w":
+			defaultSeverity = 2
+		case config.LintDefaultSeverity == "I" || config.LintDefaultSeverity == "i":
+			defaultSeverity = 3
+		case config.LintDefaultSeverity == "H" || config.LintDefaultSeverity == "h":
+			defaultSeverity = 4
+		}
+
 		command := config.LintCommand
 		if !config.LintStdin && !strings.Contains(command, "${INPUT}") {
 			command = command + " ${INPUT}"
@@ -289,7 +303,7 @@ func (h *langHandler) lint(uri DocumentURI) ([]Diagnostic, error) {
 			if entry.Col == 0 {
 				entry.Col = 1
 			}
-			severity := 1
+			severity := defaultSeverity
 			switch {
 			case entry.Type == 'E' || entry.Type == 'e':
 				severity = 1
