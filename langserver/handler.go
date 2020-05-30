@@ -197,6 +197,8 @@ func (h *langHandler) lint(uri DocumentURI) ([]Diagnostic, error) {
 	fname = filepath.Base(filepath.ToSlash(fname))
 	if runtime.GOOS == "windows" {
 		fname = strings.ToLower(fname)
+	} else {
+		fname = fmt.Sprintf(`'%s'`, fname)
 	}
 
 	var configs []Language
@@ -259,7 +261,7 @@ func (h *langHandler) lint(uri DocumentURI) ([]Diagnostic, error) {
 		if runtime.GOOS == "windows" {
 			cmd = exec.Command("cmd", "/c", command)
 		} else {
-			cmd = exec.Command("sh", "-c", fmt.Sprintf("cd '%s' && '%s'", dirname, command))
+			cmd = exec.Command("sh", "-c", fmt.Sprintf("cd '%s' && %s", dirname, command))
 		}
 		cmd.Dir = h.findRootPath(fname)
 		cmd.Env = append(os.Environ(), config.Env...)
@@ -318,7 +320,7 @@ func (h *langHandler) lint(uri DocumentURI) ([]Diagnostic, error) {
 			diagnostics = append(diagnostics, Diagnostic{
 				Range: Range{
 					Start: Position{Line: entry.Lnum - 1 - config.LintOffset, Character: entry.Col - 1},
-					End:   Position{Line: entry.Lnum - 1 - config.LintOffset, Character: 80},
+					End:   Position{Line: entry.Lnum - 1 - config.LintOffset, Character: entry.Col - 1},
 				},
 				Code:     itoaPtrIfNotZero(entry.Nr),
 				Message:  entry.Text,
